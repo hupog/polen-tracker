@@ -54,6 +54,9 @@ services:
   pollen-collector:
     build: {context: ., dockerfile: applications/pollen-collector/Dockerfile}
     environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-pollen}
+      DB_USER: ${POSTGRES_USER:-pollen}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-pollen}
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_USER: ${RABBITMQ_DEFAULT_USER:-pollen}
       RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:-pollen}

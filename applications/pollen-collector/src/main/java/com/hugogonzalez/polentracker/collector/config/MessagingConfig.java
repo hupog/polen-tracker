@@ -3,6 +3,7 @@ package com.hugogonzalez.polentracker.collector.config;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.context.annotation.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Configuration
 public class MessagingConfig {
@@ -31,5 +32,10 @@ public class MessagingConfig {
     @Bean
     JacksonJsonMessageConverter messageConverter() {
         return new JacksonJsonMessageConverter();
+    }
+
+    @Bean
+    ObjectMapper objectMapper() {
+        return new ObjectMapper().findAndRegisterModules();
     }
 }

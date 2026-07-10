@@ -1,5 +1,13 @@
 spring:
   application.name: pollen-collector
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/pollen}
+    username: ${DB_USER:pollen}
+    password: ${DB_PASSWORD:pollen}
+  jpa:
+    # La tabla la crea Flyway desde pollen-core; el collector solo la utiliza.
+    hibernate.ddl-auto: none
+    open-in-view: false
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}
