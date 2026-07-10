@@ -1,0 +1,14 @@
+spring:
+  application.name: pollen-collector
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:pollen}
+    password: ${RABBITMQ_PASSWORD:pollen}
+server.port: ${SERVER_PORT:8081}
+management.endpoints.web.exposure.include: health,info
+storage.s3:
+  endpoint: ${S3_ENDPOINT:http://localhost:9000}
+  access-key: ${MINIO_ROOT_USER:minioadmin}
+  secret-key: ${MINIO_ROOT_PASSWORD:minioadmin}
+  bucket: ${S3_BUCKET:pollen-imports}
