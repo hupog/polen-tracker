@@ -15,6 +15,10 @@ Esqueleto ejecutable de una arquitectura asíncrona para recolectar, normalizar 
 - `libraries/pollen-domain`: modelo canónico sin dependencias de infraestructura.
 - `libraries/pollen-messaging-contracts`: contratos versionados de RabbitMQ.
 
+## Arquitectura
+
+Cada aplicación sigue arquitectura hexagonal. Los casos de uso dependen de puertos, mientras que HTTP, RabbitMQ, PostgreSQL y Open-Meteo se implementan como adaptadores sustituibles. La estructura de paquetes, reglas de dependencia y flujos están descritos en [docs/architecture.md](docs/architecture.md).
+
 ## Desarrollo desde IntelliJ IDEA
 
 1. Abre el `pom.xml` raíz como proyecto Maven y selecciona un SDK Java 25.

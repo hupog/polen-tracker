@@ -20,3 +20,5 @@ storage.s3:
   access-key: ${MINIO_ROOT_USER:minioadmin}
   secret-key: ${MINIO_ROOT_PASSWORD:minioadmin}
   bucket: ${S3_BUCKET:pollen-imports}
+open-meteo:
+  base-url: ${OPEN_METEO_BASE_URL:https://air-quality-api.open-meteo.com/v1/air-quality}
