@@ -35,6 +35,14 @@ public class RabbitConfiguration {
   }
 
   @Bean
+  Queue measurementQueue() {
+    return QueueBuilder.durable(RabbitTopology.MEASUREMENT_QUEUE)
+        .deadLetterExchange(RabbitTopology.DLX)
+        .deadLetterRoutingKey("collection.measurements.failed")
+        .build();
+  }
+
+  @Bean
   Queue failedQueue() {
     return QueueBuilder.durable(RabbitTopology.FAILED_QUEUE)
         .deadLetterExchange(RabbitTopology.DLX)
@@ -57,6 +65,13 @@ public class RabbitConfiguration {
     return BindingBuilder.bind(completedQueue())
         .to(pollenExchange())
         .with(RabbitTopology.COMPLETED);
+  }
+
+  @Bean
+  Binding measurements() {
+    return BindingBuilder.bind(measurementQueue())
+        .to(pollenExchange())
+        .with(RabbitTopology.MEASUREMENT);
   }
 
   @Bean

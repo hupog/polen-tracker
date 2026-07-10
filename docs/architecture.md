@@ -104,6 +104,10 @@ HTTP POST /api/collections
   -> CollectionProcessingService
   -> PollenSourcePort (Open-Meteo o CSV)
   -> CollectionEventPublisher
+  -> collection.measurement-collected
+  -> collection.measurements.core
+  -> StorePollenMeasurementUseCase
+  -> PollenMeasurementStore (PostgreSQL)
   -> collection.completed / collection.failed
   -> CollectionResultRabbitListener
   -> HandleCollectionResultUseCase
@@ -111,6 +115,23 @@ HTTP POST /api/collections
 ```
 
 La trazabilidad de mensajes se realiza mediante `MessageTraceStore`, implementado por PostgreSQL, desde los adaptadores Rabbit. Así, los casos de uso no conocen metadatos AMQP.
+
+## Persistencia de mediciones
+
+Cada evento `collection.measurement-collected` se enruta a la cola durable `collection.measurements.core`. El adaptador de entrada Rabbit delega en `StorePollenMeasurementUseCase`, que persiste mediante `PollenMeasurementStore`.
+
+La tabla `pollen_measurements` representa muestras fechadas y no impone una frecuencia. El campo `valid_at` indica cuándo es válido el dato, independientemente de que la fuente publique cada hora, una vez al día o de forma irregular. No existe una columna de granularidad temporal.
+
+La ingestión es idempotente mediante dos restricciones:
+
+- `event_id` único para detectar la redelivery del mismo evento.
+- `(collection_id, logical_key)` único para impedir duplicados lógicos dentro de una recolección.
+
+Las mediciones de una recolección se consultan mediante:
+
+```text
+GET /api/collections/{collectionId}/measurements
+```
 
 ## Modelo común de polen
 
