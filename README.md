@@ -21,6 +21,8 @@ Las mediciones recolectadas se almacenan en PostgreSQL como muestras fechadas si
 
 Cada aplicación sigue arquitectura hexagonal. Los casos de uso dependen de puertos, mientras que HTTP, RabbitMQ, PostgreSQL y Open-Meteo se implementan como adaptadores sustituibles. La estructura de paquetes, reglas de dependencia y flujos están descritos en [docs/architecture.md](docs/architecture.md).
 
+La documentación técnica se mantiene sincronizada tanto en Markdown como en la memoria del TFG [docs/polen_tracker_propuesta_TFG_v3.docx](docs/polen_tracker_propuesta_TFG_v3.docx). Todo cambio funcional o arquitectónico debe actualizar ambos documentos.
+
 ## Desarrollo desde IntelliJ IDEA
 
 1. Abre el `pom.xml` raíz como proyecto Maven y selecciona un SDK Java 25.
