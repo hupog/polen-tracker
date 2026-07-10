@@ -1,8 +1,64 @@
 package com.hugogonzalez.polentracker.collector.adapter.in.messaging;
-import com.fasterxml.jackson.databind.ObjectMapper; import com.hugogonzalez.polentracker.collector.adapter.out.messaging.RabbitTopology; import com.hugogonzalez.polentracker.collector.application.model.MessageTrace; import com.hugogonzalez.polentracker.collector.application.port.in.ProcessCollectionUseCase; import com.hugogonzalez.polentracker.collector.application.port.out.MessageTraceStore; import com.hugogonzalez.polentracker.messaging.CollectionRequest; import org.springframework.amqp.core.Message; import org.springframework.amqp.rabbit.annotation.RabbitListener; import org.springframework.stereotype.Component; import java.nio.charset.StandardCharsets; import java.time.Instant; import java.util.UUID;
-@Component public class CollectionRequestRabbitListener {
- private final ProcessCollectionUseCase processor;private final MessageTraceStore traces;private final ObjectMapper mapper;
- public CollectionRequestRabbitListener(ProcessCollectionUseCase processor,MessageTraceStore traces,ObjectMapper mapper){this.processor=processor;this.traces=traces;this.mapper=mapper;}
- @RabbitListener(queues=RabbitTopology.REQUEST_QUEUE) public void handle(CollectionRequest request,Message message){try{var p=message.getMessageProperties();traces.save(new MessageTrace(UUID.randomUUID(),request.requestId(),parse(p.getMessageId()),"INBOUND",request.getClass().getName(),"RECEIVED",p.getReceivedExchange(),p.getReceivedRoutingKey(),RabbitTopology.REQUEST_QUEUE,p.getDeliveryTag(),p.getConsumerTag(),p.getCorrelationId(),Boolean.TRUE.equals(p.getRedelivered()),mapper.writeValueAsString(p.getHeaders()),new String(message.getBody(),StandardCharsets.UTF_8),Instant.now()));}catch(Exception e){throw new IllegalStateException("No se pudo registrar el mensaje Rabbit",e);}processor.process(request);}
- private UUID parse(String value){try{return value==null?null:UUID.fromString(value);}catch(IllegalArgumentException ignored){return null;}}
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hugogonzalez.polentracker.collector.adapter.out.messaging.RabbitTopology;
+import com.hugogonzalez.polentracker.collector.application.model.MessageTrace;
+import com.hugogonzalez.polentracker.collector.application.port.in.ProcessCollectionUseCase;
+import com.hugogonzalez.polentracker.collector.application.port.out.MessageTraceStore;
+import com.hugogonzalez.polentracker.messaging.CollectionRequest;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.UUID;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.stereotype.Component;
+
+@Component
+public class CollectionRequestRabbitListener {
+  private final ProcessCollectionUseCase processor;
+  private final MessageTraceStore traces;
+  private final ObjectMapper mapper;
+
+  public CollectionRequestRabbitListener(
+      ProcessCollectionUseCase processor, MessageTraceStore traces, ObjectMapper mapper) {
+    this.processor = processor;
+    this.traces = traces;
+    this.mapper = mapper;
+  }
+
+  @RabbitListener(queues = RabbitTopology.REQUEST_QUEUE)
+  public void handle(CollectionRequest request, Message message) {
+    try {
+      var p = message.getMessageProperties();
+      traces.save(
+          new MessageTrace(
+              UUID.randomUUID(),
+              request.requestId(),
+              parse(p.getMessageId()),
+              "INBOUND",
+              request.getClass().getName(),
+              "RECEIVED",
+              p.getReceivedExchange(),
+              p.getReceivedRoutingKey(),
+              RabbitTopology.REQUEST_QUEUE,
+              p.getDeliveryTag(),
+              p.getConsumerTag(),
+              p.getCorrelationId(),
+              Boolean.TRUE.equals(p.getRedelivered()),
+              mapper.writeValueAsString(p.getHeaders()),
+              new String(message.getBody(), StandardCharsets.UTF_8),
+              Instant.now()));
+    } catch (Exception e) {
+      throw new IllegalStateException("No se pudo registrar el mensaje Rabbit", e);
+    }
+    processor.process(request);
+  }
+
+  private UUID parse(String value) {
+    try {
+      return value == null ? null : UUID.fromString(value);
+    } catch (IllegalArgumentException ignored) {
+      return null;
+    }
+  }
 }

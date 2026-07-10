@@ -1,1 +1,18 @@
-package com.hugogonzalez.polentracker.collector.adapter.out.persistence.trace; import com.hugogonzalez.polentracker.collector.application.model.MessageTrace; import com.hugogonzalez.polentracker.collector.application.port.out.MessageTraceStore; import org.springframework.stereotype.Component; @Component public class JpaMessageTraceStore implements MessageTraceStore {private final SpringDataMessageTraceRepository repository;public JpaMessageTraceStore(SpringDataMessageTraceRepository repository){this.repository=repository;}public void save(MessageTrace trace){repository.save(new MessageTraceJpaEntity(trace));}}
+package com.hugogonzalez.polentracker.collector.adapter.out.persistence.trace;
+
+import com.hugogonzalez.polentracker.collector.application.model.MessageTrace;
+import com.hugogonzalez.polentracker.collector.application.port.out.MessageTraceStore;
+import org.springframework.stereotype.Component;
+
+@Component
+public class JpaMessageTraceStore implements MessageTraceStore {
+  private final SpringDataMessageTraceRepository repository;
+
+  public JpaMessageTraceStore(SpringDataMessageTraceRepository repository) {
+    this.repository = repository;
+  }
+
+  public void save(MessageTrace trace) {
+    repository.save(new MessageTraceJpaEntity(trace));
+  }
+}

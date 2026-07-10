@@ -1,14 +1,124 @@
 package com.hugogonzalez.polentracker.collector.adapter.out.source.openmeteo;
-import com.fasterxml.jackson.databind.*; import com.hugogonzalez.polentracker.collector.application.port.out.PollenSourcePort; import com.hugogonzalez.polentracker.domain.*; import com.hugogonzalez.polentracker.messaging.CollectionParameters; import org.springframework.beans.factory.annotation.Value; import org.springframework.stereotype.Component;
-import java.io.IOException; import java.math.BigDecimal; import java.net.*; import java.net.http.*; import java.nio.charset.StandardCharsets; import java.time.*; import java.util.*;
-@Component public class OpenMeteoSourceAdapter implements PollenSourcePort {
- private static final String HOURLY="alder_pollen,birch_pollen,grass_pollen,mugwort_pollen,olive_pollen,ragweed_pollen";
- private final ObjectMapper mapper; private final HttpClient http; private final String baseUrl;
- public OpenMeteoSourceAdapter(ObjectMapper mapper,@Value("${open-meteo.base-url}") String baseUrl){this.mapper=mapper;this.baseUrl=baseUrl;this.http=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();}
- public PollenSourceType supportedSource(){return PollenSourceType.OPEN_METEO;}
- public List<PollenMeasurement> collect(CollectionParameters p){var l=p.location();var query="latitude="+encode(Double.toString(l.latitude()))+"&longitude="+encode(Double.toString(l.longitude()))+"&hourly="+encode(HOURLY)+"&timezone=auto&start_date="+p.dateFrom()+"&end_date="+p.dateTo();try{var request=HttpRequest.newBuilder(URI.create(baseUrl+"?"+query)).timeout(Duration.ofSeconds(30)).GET().build();var response=http.send(request,HttpResponse.BodyHandlers.ofString());if(response.statusCode()/100!=2)throw new IllegalStateException("Open-Meteo devolvió HTTP "+response.statusCode()+": "+response.body());return map(p,mapper.readTree(response.body()));}catch(InterruptedException e){Thread.currentThread().interrupt();throw new IllegalStateException("Consulta a Open-Meteo interrumpida",e);}catch(IOException e){throw new IllegalStateException("No se pudo consultar Open-Meteo",e);}}
- private List<PollenMeasurement> map(CollectionParameters p,JsonNode root){if(root.path("error").asBoolean(false))throw new IllegalStateException("Open-Meteo: "+root.path("reason").asText("respuesta inválida"));var hourly=root.path("hourly");var times=hourly.path("time");var zone=ZoneId.of(root.path("timezone").asText("UTC"));var result=new ArrayList<PollenMeasurement>();for(int i=0;i<times.size();i++){var at=LocalDateTime.parse(times.get(i).asText()).atZone(zone).toInstant();add(result,p,PollenType.TREES,at,sum(hourly,i,"alder_pollen","birch_pollen","olive_pollen"));add(result,p,PollenType.GRASSES,at,sum(hourly,i,"grass_pollen"));add(result,p,PollenType.WEEDS,at,sum(hourly,i,"mugwort_pollen","ragweed_pollen"));}return result;}
- private void add(List<PollenMeasurement> out,CollectionParameters p,PollenType type,Instant at,BigDecimal value){if(value!=null)out.add(new PollenMeasurement(p.location(),type,MetricType.CONCENTRATION,value,MeasurementUnit.GRAINS_PER_CUBIC_METER,DataNature.FORECAST,at));}
- private BigDecimal sum(JsonNode hourly,int index,String...fields){var total=BigDecimal.ZERO;var present=false;for(var field:fields){var value=hourly.path(field).path(index);if(!value.isMissingNode()&&!value.isNull()){total=total.add(value.decimalValue());present=true;}}return present?total:null;}
- private String encode(String value){return URLEncoder.encode(value,StandardCharsets.UTF_8);}
+
+import com.fasterxml.jackson.databind.*;
+import com.hugogonzalez.polentracker.collector.application.port.out.PollenSourcePort;
+import com.hugogonzalez.polentracker.domain.*;
+import com.hugogonzalez.polentracker.messaging.CollectionParameters;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.net.*;
+import java.net.http.*;
+import java.nio.charset.StandardCharsets;
+import java.time.*;
+import java.util.*;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+@Component
+public class OpenMeteoSourceAdapter implements PollenSourcePort {
+  private static final String HOURLY =
+      "alder_pollen,birch_pollen,grass_pollen,mugwort_pollen,olive_pollen,ragweed_pollen";
+  private final ObjectMapper mapper;
+  private final HttpClient http;
+  private final String baseUrl;
+
+  public OpenMeteoSourceAdapter(
+      ObjectMapper mapper, @Value("${open-meteo.base-url}") String baseUrl) {
+    this.mapper = mapper;
+    this.baseUrl = baseUrl;
+    this.http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+  }
+
+  public PollenSourceType supportedSource() {
+    return PollenSourceType.OPEN_METEO;
+  }
+
+  public List<PollenMeasurement> collect(CollectionParameters p) {
+    var l = p.location();
+    var query =
+        "latitude="
+            + encode(Double.toString(l.latitude()))
+            + "&longitude="
+            + encode(Double.toString(l.longitude()))
+            + "&hourly="
+            + encode(HOURLY)
+            + "&timezone=auto&start_date="
+            + p.dateFrom()
+            + "&end_date="
+            + p.dateTo();
+    try {
+      var request =
+          HttpRequest.newBuilder(URI.create(baseUrl + "?" + query))
+              .timeout(Duration.ofSeconds(30))
+              .GET()
+              .build();
+      var response = http.send(request, HttpResponse.BodyHandlers.ofString());
+      if (response.statusCode() / 100 != 2)
+        throw new IllegalStateException(
+            "Open-Meteo devolvió HTTP " + response.statusCode() + ": " + response.body());
+      return map(p, mapper.readTree(response.body()));
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new IllegalStateException("Consulta a Open-Meteo interrumpida", e);
+    } catch (IOException e) {
+      throw new IllegalStateException("No se pudo consultar Open-Meteo", e);
+    }
+  }
+
+  private List<PollenMeasurement> map(CollectionParameters p, JsonNode root) {
+    if (root.path("error").asBoolean(false))
+      throw new IllegalStateException(
+          "Open-Meteo: " + root.path("reason").asText("respuesta inválida"));
+    var hourly = root.path("hourly");
+    var times = hourly.path("time");
+    var zone = ZoneId.of(root.path("timezone").asText("UTC"));
+    var result = new ArrayList<PollenMeasurement>();
+    for (int i = 0; i < times.size(); i++) {
+      var at = LocalDateTime.parse(times.get(i).asText()).atZone(zone).toInstant();
+      add(
+          result,
+          p,
+          PollenType.TREES,
+          at,
+          sum(hourly, i, "alder_pollen", "birch_pollen", "olive_pollen"));
+      add(result, p, PollenType.GRASSES, at, sum(hourly, i, "grass_pollen"));
+      add(result, p, PollenType.WEEDS, at, sum(hourly, i, "mugwort_pollen", "ragweed_pollen"));
+    }
+    return result;
+  }
+
+  private void add(
+      List<PollenMeasurement> out,
+      CollectionParameters p,
+      PollenType type,
+      Instant at,
+      BigDecimal value) {
+    if (value != null)
+      out.add(
+          new PollenMeasurement(
+              p.location(),
+              type,
+              MetricType.CONCENTRATION,
+              value,
+              MeasurementUnit.GRAINS_PER_CUBIC_METER,
+              DataNature.FORECAST,
+              at));
+  }
+
+  private BigDecimal sum(JsonNode hourly, int index, String... fields) {
+    var total = BigDecimal.ZERO;
+    var present = false;
+    for (var field : fields) {
+      var value = hourly.path(field).path(index);
+      if (!value.isMissingNode() && !value.isNull()) {
+        total = total.add(value.decimalValue());
+        present = true;
+      }
+    }
+    return present ? total : null;
+  }
+
+  private String encode(String value) {
+    return URLEncoder.encode(value, StandardCharsets.UTF_8);
+  }
 }
