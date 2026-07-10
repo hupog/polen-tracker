@@ -1,4 +1,35 @@
-const form=document.querySelector('#collection-form'),list=document.querySelector('#collections'),message=document.querySelector('#message');
-const today=new Date().toISOString().slice(0,10); form.dateFrom.value=today; form.dateTo.value=today;
-async function refresh(){const response=await fetch('/api/collections');const items=await response.json();list.innerHTML=items.length?items.map(item=>`<article class="collection"><span><strong>${item.sourceType}</strong><br><small>${item.id}</small></span><span class="status">${item.status}</span></article>`).join(''):'<p>Todavía no hay recolecciones.</p>'}
-form.addEventListener('submit',async event=>{event.preventDefault();const data=new FormData(form);const body={sourceType:data.get('sourceType'),dateFrom:data.get('dateFrom'),dateTo:data.get('dateTo'),location:{name:data.get('name'),latitude:Number(data.get('latitude')),longitude:Number(data.get('longitude'))}};const response=await fetch('/api/collections',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});message.textContent=response.ok?'Solicitud encolada.':'No se pudo crear la solicitud.';await refresh()});document.querySelector('#refresh').addEventListener('click',refresh);refresh();
+const form = document.querySelector('#collection-form'), list = document.querySelector('#collections'),
+    message = document.querySelector('#message');
+const today = new Date().toISOString().slice(0, 10);
+form.dateFrom.value = today;
+form.dateTo.value = today;
+
+async function refresh() {
+    const response = await fetch('/api/collections');
+    const items = await response.json();
+    list.innerHTML = items.length ? items.map(item => `<article class="collection"><span><strong>${item.sourceType}</strong><br><small>${item.id}</small></span><span class="status">${item.status}</span></article>`).join('') : '<p>Todavía no hay recolecciones.</p>'
+}
+
+form.addEventListener('submit', async event => {
+    event.preventDefault();
+    const data = new FormData(form);
+    const body = {
+        sourceType: data.get('sourceType'),
+        dateFrom: data.get('dateFrom'),
+        dateTo: data.get('dateTo'),
+        location: {
+            name: data.get('name'),
+            latitude: Number(data.get('latitude')),
+            longitude: Number(data.get('longitude'))
+        }
+    };
+    const response = await fetch('/api/collections', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+    });
+    message.textContent = response.ok ? 'Solicitud encolada.' : 'No se pudo crear la solicitud.';
+    await refresh()
+});
+document.querySelector('#refresh').addEventListener('click', refresh);
+refresh();

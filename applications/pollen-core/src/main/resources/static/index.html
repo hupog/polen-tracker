@@ -1,1 +1,38 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Polen Tracker</title><link rel="stylesheet" href="/styles.css"></head><body><main><header><p class="eyebrow">TFG · Cliente integrado</p><h1>Polen Tracker</h1><p>Inicia una recolección y consulta su evolución asíncrona.</p></header><section><h2>Nueva recolección</h2><form id="collection-form"><label>Fuente<select name="sourceType"><option value="OPEN_METEO">Open-Meteo</option></select></label><div class="grid"><label>Desde<input name="dateFrom" type="date" required></label><label>Hasta<input name="dateTo" type="date" required></label></div><label>Lugar<input name="name" value="Santiago de Compostela" required></label><div class="grid"><label>Latitud<input name="latitude" type="number" step="any" value="42.8782" required></label><label>Longitud<input name="longitude" type="number" step="any" value="-8.5448" required></label></div><button>Solicitar recolección</button><output id="message"></output></form></section><section><div class="section-title"><h2>Recolecciones</h2><button class="secondary" id="refresh" type="button">Actualizar</button></div><div id="collections" class="collection-list"></div></section></main><script src="/app.js"></script></body></html>
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Polen Tracker</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<main>
+    <header><p class="eyebrow">TFG · Cliente integrado</p>
+        <h1>Polen Tracker</h1>
+        <p>Inicia una recolección y consulta su evolución asíncrona.</p></header>
+    <section><h2>Nueva recolección</h2>
+        <form id="collection-form"><label>Fuente<select name="sourceType">
+            <option value="OPEN_METEO">Open-Meteo</option>
+        </select></label>
+            <div class="grid"><label>Desde<input name="dateFrom" type="date" required></label><label>Hasta<input
+                    name="dateTo" type="date" required></label></div>
+            <label>Lugar<input name="name" value="Santiago de Compostela" required></label>
+            <div class="grid"><label>Latitud<input name="latitude" type="number" step="any" value="42.8782"
+                                                   required></label><label>Longitud<input name="longitude" type="number"
+                                                                                          step="any" value="-8.5448"
+                                                                                          required></label></div>
+            <button>Solicitar recolección</button>
+            <output id="message"></output>
+        </form>
+    </section>
+    <section>
+        <div class="section-title"><h2>Recolecciones</h2>
+            <button class="secondary" id="refresh" type="button">Actualizar</button>
+        </div>
+        <div id="collections" class="collection-list"></div>
+    </section>
+</main>
+<script src="/app.js"></script>
+</body>
+</html>

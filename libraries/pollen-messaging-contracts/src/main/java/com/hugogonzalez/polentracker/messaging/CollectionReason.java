@@ -1,2 +1,3 @@
 package com.hugogonzalez.polentracker.messaging;
-public enum CollectionReason { SCHEDULED, MANUAL }
+
+public enum CollectionReason {SCHEDULED, MANUAL}

@@ -1,2 +1,20 @@
-package com.hugogonzalez.polentracker.collector.messaging; import com.hugogonzalez.polentracker.collector.config.MessagingConfig; import com.hugogonzalez.polentracker.messaging.CollectionRequest; import org.springframework.amqp.rabbit.annotation.RabbitListener; import org.springframework.stereotype.Component;
-@Component public class CollectionRequestListener {private final CollectionProcessor processor; public CollectionRequestListener(CollectionProcessor p){processor=p;} @RabbitListener(queues=MessagingConfig.REQUEST_QUEUE) public void handle(CollectionRequest request){processor.process(request);}}
+package com.hugogonzalez.polentracker.collector.messaging;
+
+import com.hugogonzalez.polentracker.collector.config.MessagingConfig;
+import com.hugogonzalez.polentracker.messaging.CollectionRequest;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.stereotype.Component;
+
+@Component
+public class CollectionRequestListener {
+    private final CollectionProcessor processor;
+
+    public CollectionRequestListener(CollectionProcessor p) {
+        processor = p;
+    }
+
+    @RabbitListener(queues = MessagingConfig.REQUEST_QUEUE)
+    public void handle(CollectionRequest request) {
+        processor.process(request);
+    }
+}
