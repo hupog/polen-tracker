@@ -4,7 +4,7 @@
     <springProperty scope="context" name="service" source="spring.application.name" defaultValue="pollen-collector"/>
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} service=${service} level=%-5level thread=%thread correlation_id=%X{correlationId:-} request_id=%X{requestId:-} collection_id=%X{collectionId:-} message_id=%X{messageId:-} logger=%logger{36} - %msg%n%ex</pattern>
+            <pattern>%clr(%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}){faint} %clr(service=${service}){cyan} %clr(level=%-5level) %clr(thread=%thread){blue} %clr(correlation_id=%X{correlationId:-}){yellow} %clr(request_id=%X{requestId:-}){yellow} %clr(collection_id=%X{collectionId:-}){yellow} %clr(message_id=%X{messageId:-}){yellow} %clr(logger=%logger{36}){magenta} %clr(-){faint} %msg%n%ex</pattern>
         </encoder>
     </appender>
     <root level="INFO">
