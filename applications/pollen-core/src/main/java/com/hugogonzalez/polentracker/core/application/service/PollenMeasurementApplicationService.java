@@ -7,9 +7,11 @@ import com.hugogonzalez.polentracker.messaging.PollenMeasurementCollected;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.slf4j.*;
 
 public class PollenMeasurementApplicationService
     implements StorePollenMeasurementUseCase, QueryPollenMeasurementsUseCase {
+  private static final Logger log = LoggerFactory.getLogger(PollenMeasurementApplicationService.class);
   private final PollenMeasurementStore store;
 
   public PollenMeasurementApplicationService(PollenMeasurementStore store) {
@@ -18,6 +20,9 @@ public class PollenMeasurementApplicationService
 
   @Override
   public void store(PollenMeasurementCollected event) {
+    try (var request = MDC.putCloseable("requestId", event.requestId().toString());
+        var collection = MDC.putCloseable("collectionId", event.requestId().toString());
+        var message = MDC.putCloseable("messageId", event.eventId().toString())) {
     var payload = event.payload();
     store.saveIfAbsent(
         new StoredPollenMeasurement(
@@ -35,6 +40,13 @@ public class PollenMeasurementApplicationService
             payload.validAt(),
             event.collectedAt(),
             Instant.now()));
+      log.info(
+          "Pollen measurement stored source={} pollen_type={} metric={} valid_at={}",
+          event.sourceType(),
+          payload.pollenType(),
+          payload.metricType(),
+          payload.validAt());
+    }
   }
 
   @Override

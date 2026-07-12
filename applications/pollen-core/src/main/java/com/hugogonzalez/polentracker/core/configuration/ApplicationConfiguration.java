@@ -6,7 +6,7 @@ import java.time.Clock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.*;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.scheduling.concurrent.*;
 
 @Configuration
 @EnableScheduling
@@ -28,6 +28,16 @@ public class ApplicationConfiguration {
     executor.setWaitForTasksToCompleteOnShutdown(true);
     executor.setAwaitTerminationSeconds(20);
     return executor;
+  }
+
+  @Bean("outboxLeaseScheduler")
+  ThreadPoolTaskScheduler outboxLeaseScheduler() {
+    var scheduler = new ThreadPoolTaskScheduler();
+    scheduler.setPoolSize(2);
+    scheduler.setThreadNamePrefix("outbox-lease-");
+    scheduler.setWaitForTasksToCompleteOnShutdown(true);
+    scheduler.setAwaitTerminationSeconds(20);
+    return scheduler;
   }
 
   @Bean

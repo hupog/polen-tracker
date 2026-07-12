@@ -12,9 +12,11 @@ import java.util.UUID;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
+import org.slf4j.*;
 
 @Component
 public class PollenMeasurementRabbitListener {
+  private static final Logger log = LoggerFactory.getLogger(PollenMeasurementRabbitListener.class);
   private final StorePollenMeasurementUseCase measurements;
   private final MessageTraceStore traces;
   private final ObjectMapper mapper;
@@ -28,8 +30,14 @@ public class PollenMeasurementRabbitListener {
 
   @RabbitListener(queues = RabbitTopology.MEASUREMENT_QUEUE)
   public void handle(PollenMeasurementCollected event, Message message) {
-    measurements.store(event);
-    trace(event, message);
+    try (var request = MDC.putCloseable("requestId", event.requestId().toString());
+        var collection = MDC.putCloseable("collectionId", event.requestId().toString());
+        var messageId = MDC.putCloseable("messageId", event.eventId().toString())) {
+      log.info("Pollen measurement message received redelivered={}", message.getMessageProperties().getRedelivered());
+      measurements.store(event);
+      trace(event, message);
+      log.info("Pollen measurement message processed");
+    }
   }
 
   private void trace(PollenMeasurementCollected event, Message message) {
@@ -54,7 +62,7 @@ public class PollenMeasurementRabbitListener {
               new String(message.getBody(), StandardCharsets.UTF_8),
               Instant.now()));
     } catch (Exception e) {
-      throw new IllegalStateException("No se pudo registrar el mensaje Rabbit", e);
+      throw new IllegalStateException("Rabbit message trace could not be stored", e);
     }
   }
 }

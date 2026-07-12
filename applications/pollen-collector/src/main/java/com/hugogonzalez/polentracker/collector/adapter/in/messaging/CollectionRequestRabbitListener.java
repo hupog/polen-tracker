@@ -12,9 +12,11 @@ import java.util.UUID;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
+import org.slf4j.*;
 
 @Component
 public class CollectionRequestRabbitListener {
+  private static final Logger log = LoggerFactory.getLogger(CollectionRequestRabbitListener.class);
   private final ProcessCollectionUseCase processor;
   private final MessageTraceStore traces;
   private final ObjectMapper mapper;
@@ -28,6 +30,15 @@ public class CollectionRequestRabbitListener {
 
   @RabbitListener(queues = RabbitTopology.REQUEST_QUEUE)
   public void handle(CollectionRequest request, Message message) {
+    var rabbitMessageId = message.getMessageProperties().getMessageId();
+    try (var requestContext = MDC.putCloseable("requestId", request.requestId().toString());
+        var collection = MDC.putCloseable("collectionId", request.requestId().toString());
+        var messageContext = MDC.putCloseable("messageId", String.valueOf(rabbitMessageId))) {
+      log.info(
+          "Collection request received source={} reason={} redelivered={}",
+          request.sourceType(),
+          request.reason(),
+          message.getMessageProperties().getRedelivered());
     try {
       var p = message.getMessageProperties();
       traces.save(
@@ -49,9 +60,11 @@ public class CollectionRequestRabbitListener {
               new String(message.getBody(), StandardCharsets.UTF_8),
               Instant.now()));
     } catch (Exception e) {
-      throw new IllegalStateException("No se pudo registrar el mensaje Rabbit", e);
+      throw new IllegalStateException("Rabbit message trace could not be stored", e);
     }
     processor.process(request);
+      log.info("Collection request processed");
+    }
   }
 
   private UUID parse(String value) {

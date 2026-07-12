@@ -182,6 +182,21 @@ Los contratos Rabbit no se usan como entidades de persistencia. Los cambios inco
 6. Los listeners solo traducen mensajes y delegan en casos de uso.
 7. Las constantes de exchanges, colas y routing keys permanecen en el adaptador Rabbit.
 
+## Logging y correlación
+
+Ambas aplicaciones escriben logs de consola con el mismo formato e identifican siempre el servicio,
+nivel, hilo, logger y contexto MDC disponible. Los mensajes operativos están redactados en inglés.
+
+- `correlationId` identifica la petición HTTP y se acepta/devuelve mediante `X-Correlation-Id`.
+- `requestId` y `collectionId` permiten seguir una recolección a través del outbox y RabbitMQ.
+- `messageId` identifica el mensaje o evento concreto cuando está disponible.
+- Los listeners limpian el MDC al terminar para evitar contaminación entre hilos reutilizados.
+- El relay restaura el contexto en workers de publicación y en hilos de renovación del lease.
+
+Se registran inicio, finalización, duración y fallos de HTTP, outbox, publicación y consumo Rabbit,
+procesamiento de recolecciones, Open-Meteo y persistencia lógica. No se escriben credenciales ni
+respuestas completas de proveedores externos.
+
 ## Verificación
 
 La compilación reproducible de ambos servicios se ejecuta con:

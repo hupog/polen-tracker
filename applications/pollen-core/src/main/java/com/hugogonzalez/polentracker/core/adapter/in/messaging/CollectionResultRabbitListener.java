@@ -12,9 +12,11 @@ import java.util.UUID;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
+import org.slf4j.*;
 
 @Component
 public class CollectionResultRabbitListener {
+  private static final Logger log = LoggerFactory.getLogger(CollectionResultRabbitListener.class);
   private final HandleCollectionResultUseCase results;
   private final MessageTraceStore traces;
   private final ObjectMapper mapper;
@@ -28,14 +30,26 @@ public class CollectionResultRabbitListener {
 
   @RabbitListener(queues = RabbitTopology.COMPLETED_QUEUE)
   public void completed(CollectionCompleted event, Message message) {
-    trace(event.requestId(), event.eventId(), event, message, RabbitTopology.COMPLETED_QUEUE);
-    results.complete(event.requestId(), event.producedItems(), event.completedAt());
+    try (var request = MDC.putCloseable("requestId", event.requestId().toString());
+        var collection = MDC.putCloseable("collectionId", event.requestId().toString());
+        var messageId = MDC.putCloseable("messageId", event.eventId().toString())) {
+      log.info("Collection completion message received produced_items={}", event.producedItems());
+      trace(event.requestId(), event.eventId(), event, message, RabbitTopology.COMPLETED_QUEUE);
+      results.complete(event.requestId(), event.producedItems(), event.completedAt());
+      log.info("Collection completion message processed");
+    }
   }
 
   @RabbitListener(queues = RabbitTopology.FAILED_QUEUE)
   public void failed(CollectionFailed event, Message message) {
-    trace(event.requestId(), event.eventId(), event, message, RabbitTopology.FAILED_QUEUE);
-    results.fail(event.requestId(), event.failedAt());
+    try (var request = MDC.putCloseable("requestId", event.requestId().toString());
+        var collection = MDC.putCloseable("collectionId", event.requestId().toString());
+        var messageId = MDC.putCloseable("messageId", event.eventId().toString())) {
+      log.warn("Collection failure message received error_code={}", event.errorCode());
+      trace(event.requestId(), event.eventId(), event, message, RabbitTopology.FAILED_QUEUE);
+      results.fail(event.requestId(), event.failedAt());
+      log.info("Collection failure message processed");
+    }
   }
 
   private void trace(
@@ -61,7 +75,7 @@ public class CollectionResultRabbitListener {
               new String(message.getBody(), StandardCharsets.UTF_8),
               Instant.now()));
     } catch (Exception e) {
-      throw new IllegalStateException("No se pudo registrar el mensaje Rabbit", e);
+      throw new IllegalStateException("Rabbit message trace could not be stored", e);
     }
   }
 }

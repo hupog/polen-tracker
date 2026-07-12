@@ -8,9 +8,11 @@ import java.time.Instant;
 import java.util.UUID;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
+import org.slf4j.*;
 
 @Component
 public class RabbitCollectionRequestPublisher implements CollectionRequestPublisher {
+  private static final Logger log = LoggerFactory.getLogger(RabbitCollectionRequestPublisher.class);
   private final RabbitTemplate rabbit;
   private final MessageTraceStore traces;
   private final ObjectMapper mapper;
@@ -23,6 +25,11 @@ public class RabbitCollectionRequestPublisher implements CollectionRequestPublis
   }
 
   public void publish(CollectionRequest request) {
+    log.info(
+        "Publishing collection request exchange={} routing_key={} source={}",
+        RabbitTopology.EXCHANGE,
+        RabbitTopology.REQUESTED,
+        request.sourceType());
     rabbit.convertAndSend(
         RabbitTopology.EXCHANGE,
         RabbitTopology.REQUESTED,
@@ -31,6 +38,7 @@ public class RabbitCollectionRequestPublisher implements CollectionRequestPublis
           try {
             var messageId = UUID.randomUUID();
             message.getMessageProperties().setMessageId(messageId.toString());
+            log.debug("Rabbit message created message_id={}", messageId);
             traces.save(
                 new MessageTrace(
                     UUID.randomUUID(),
@@ -51,8 +59,9 @@ public class RabbitCollectionRequestPublisher implements CollectionRequestPublis
                     Instant.now()));
             return message;
           } catch (Exception e) {
-            throw new IllegalStateException("No se pudo registrar el mensaje Rabbit", e);
+            throw new IllegalStateException("Rabbit message trace could not be stored", e);
           }
         });
+    log.info("Collection request handed to RabbitTemplate");
   }
 }

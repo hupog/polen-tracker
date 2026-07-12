@@ -13,9 +13,11 @@ import java.time.*;
 import java.util.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.slf4j.*;
 
 @Component
 public class OpenMeteoSourceAdapter implements PollenSourcePort {
+  private static final Logger log = LoggerFactory.getLogger(OpenMeteoSourceAdapter.class);
   private static final String HOURLY =
       "alder_pollen,birch_pollen,grass_pollen,mugwort_pollen,olive_pollen,ragweed_pollen";
   private final ObjectMapper mapper;
@@ -35,6 +37,13 @@ public class OpenMeteoSourceAdapter implements PollenSourcePort {
 
   public List<PollenMeasurement> collect(CollectionParameters p) {
     var l = p.location();
+    var started = System.nanoTime();
+    log.info(
+        "Open-Meteo request started latitude={} longitude={} date_from={} date_to={}",
+        l.latitude(),
+        l.longitude(),
+        p.dateFrom(),
+        p.dateTo());
     var query =
         "latitude="
             + encode(Double.toString(l.latitude()))
@@ -53,22 +62,28 @@ public class OpenMeteoSourceAdapter implements PollenSourcePort {
               .GET()
               .build();
       var response = http.send(request, HttpResponse.BodyHandlers.ofString());
+      log.info(
+          "Open-Meteo response received status={} duration_ms={}",
+          response.statusCode(),
+          (System.nanoTime() - started) / 1_000_000);
       if (response.statusCode() / 100 != 2)
         throw new IllegalStateException(
-            "Open-Meteo devolvió HTTP " + response.statusCode() + ": " + response.body());
-      return map(p, mapper.readTree(response.body()));
+            "Open-Meteo returned HTTP " + response.statusCode());
+      var measurements = map(p, mapper.readTree(response.body()));
+      log.info("Open-Meteo response mapped measurement_count={}", measurements.size());
+      return measurements;
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      throw new IllegalStateException("Consulta a Open-Meteo interrumpida", e);
+      throw new IllegalStateException("Open-Meteo request was interrupted", e);
     } catch (IOException e) {
-      throw new IllegalStateException("No se pudo consultar Open-Meteo", e);
+      throw new IllegalStateException("Open-Meteo request failed", e);
     }
   }
 
   private List<PollenMeasurement> map(CollectionParameters p, JsonNode root) {
     if (root.path("error").asBoolean(false))
       throw new IllegalStateException(
-          "Open-Meteo: " + root.path("reason").asText("respuesta inválida"));
+          "Open-Meteo: " + root.path("reason").asText("invalid response"));
     var hourly = root.path("hourly");
     var times = hourly.path("time");
     var zone = ZoneId.of(root.path("timezone").asText("UTC"));

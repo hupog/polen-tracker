@@ -39,7 +39,7 @@ public class JpaCollectionSubmissionStore implements CollectionSubmissionStore {
               collection.requestedAt()));
       return saved;
     } catch (JsonProcessingException e) {
-      throw new IllegalStateException("No se pudo serializar la solicitud de recolección", e);
+      throw new IllegalStateException("Collection request could not be serialized", e);
     }
   }
 }

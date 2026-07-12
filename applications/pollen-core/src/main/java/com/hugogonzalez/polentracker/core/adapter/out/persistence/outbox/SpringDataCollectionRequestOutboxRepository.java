@@ -1,6 +1,8 @@
 package com.hugogonzalez.polentracker.core.adapter.out.persistence.outbox;
 
+import jakarta.persistence.LockModeType;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
@@ -21,4 +23,8 @@ public interface SpringDataCollectionRequestOutboxRepository
           """,
       nativeQuery = true)
   List<CollectionRequestOutboxJpaEntity> lockAvailableBatch(@Param("batchSize") int batchSize);
+
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("select entry from CollectionRequestOutboxJpaEntity entry where entry.id = :id")
+  Optional<CollectionRequestOutboxJpaEntity> lockById(@Param("id") UUID id);
 }

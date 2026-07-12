@@ -43,6 +43,9 @@ public class CollectionRequestOutboxJpaEntity {
   @Column(name = "locked_until")
   private Instant lockedUntil;
 
+  @Column(name = "claim_token")
+  private UUID claimToken;
+
   protected CollectionRequestOutboxJpaEntity() {}
 
   public CollectionRequestOutboxJpaEntity(
@@ -60,21 +63,27 @@ public class CollectionRequestOutboxJpaEntity {
     status = Status.PROCESSING;
     lockedBy = workerId;
     lockedUntil = leaseUntil;
-    return new ClaimedOutboxEntry(id, payload, workerId);
+    claimToken = UUID.randomUUID();
+    return new ClaimedOutboxEntry(id, requestId, payload, workerId, claimToken);
   }
 
-  public boolean published(UUID workerId, Instant at) {
-    if (status != Status.PROCESSING || !workerId.equals(lockedBy)) return false;
-    status = Status.PUBLISHED;
-    publishedAt = at;
-    lastError = null;
-    lockedBy = null;
-    lockedUntil = null;
+  public boolean renew(UUID workerId, UUID token, Instant leaseUntil) {
+    if (!ownedBy(workerId, token)) return false;
+    lockedUntil = leaseUntil;
     return true;
   }
 
-  public boolean failed(UUID workerId, String error, Instant retryAt) {
-    if (status != Status.PROCESSING || !workerId.equals(lockedBy)) return false;
+  public boolean published(UUID workerId, UUID token, Instant at) {
+    if (!ownedBy(workerId, token)) return false;
+    status = Status.PUBLISHED;
+    publishedAt = at;
+    lastError = null;
+    clearClaim();
+    return true;
+  }
+
+  public boolean failed(UUID workerId, UUID token, String error, Instant retryAt) {
+    if (!ownedBy(workerId, token)) return false;
     status = Status.PENDING;
     attempts++;
     availableAt = retryAt;
@@ -82,9 +91,20 @@ public class CollectionRequestOutboxJpaEntity {
         error == null
             ? "Unknown publication error"
             : error.substring(0, Math.min(4000, error.length()));
+    clearClaim();
+    return true;
+  }
+
+  private boolean ownedBy(UUID workerId, UUID token) {
+    return status == Status.PROCESSING
+        && workerId.equals(lockedBy)
+        && token.equals(claimToken);
+  }
+
+  private void clearClaim() {
     lockedBy = null;
     lockedUntil = null;
-    return true;
+    claimToken = null;
   }
 
   public int attempts() {
