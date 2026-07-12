@@ -17,39 +17,27 @@ public class CollectionProcessingService implements ProcessCollectionUseCase {
   }
 
   public void process(CollectionRequest request) {
-    try {
-      var measurements = sources.get(request.sourceType()).collect(request.params());
-      for (var m : measurements) {
-        var id = UUID.randomUUID();
-        var key =
-            request.sourceType()
-                + "|"
-                + m.location().latitude()
-                + "|"
-                + m.location().longitude()
-                + "|"
-                + m.pollenType()
-                + "|"
-                + m.validAt()
-                + "|"
-                + m.metricType();
-        events.measurement(
-            new PollenMeasurementCollected(
-                "1.0", id, request.requestId(), request.sourceType(), Instant.now(), key, m));
-      }
-      events.completed(
-          new CollectionCompleted(
-              "1.0", UUID.randomUUID(), request.requestId(), measurements.size(), Instant.now()));
-    } catch (Exception e) {
-      events.failed(
-          new CollectionFailed(
-              "1.0",
-              UUID.randomUUID(),
-              request.requestId(),
-              "COLLECTION_FAILED",
-              e.getMessage(),
-              Instant.now()));
-      throw e;
+    var measurements = sources.get(request.sourceType()).collect(request.params());
+    for (var m : measurements) {
+      var id = UUID.randomUUID();
+      var key =
+          request.sourceType()
+              + "|"
+              + m.location().latitude()
+              + "|"
+              + m.location().longitude()
+              + "|"
+              + m.pollenType()
+              + "|"
+              + m.validAt()
+              + "|"
+              + m.metricType();
+      events.measurement(
+          new PollenMeasurementCollected(
+              "1.0", id, request.requestId(), request.sourceType(), Instant.now(), key, m));
     }
+    events.completed(
+        new CollectionCompleted(
+            "1.0", UUID.randomUUID(), request.requestId(), measurements.size(), Instant.now()));
   }
 }

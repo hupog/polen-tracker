@@ -13,6 +13,14 @@ spring:
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USER:pollen}
     password: ${RABBITMQ_PASSWORD:pollen}
+    listener.simple:
+      default-requeue-rejected: false
+      retry:
+        enabled: true
+        max-attempts: ${RABBITMQ_RETRY_MAX_ATTEMPTS:3}
+        initial-interval: ${RABBITMQ_RETRY_INITIAL_INTERVAL:1s}
+        multiplier: ${RABBITMQ_RETRY_MULTIPLIER:2}
+        max-interval: ${RABBITMQ_RETRY_MAX_INTERVAL:10s}
 server.port: ${SERVER_PORT:8081}
 management.endpoints.web.exposure.include: health,info
 storage.s3:

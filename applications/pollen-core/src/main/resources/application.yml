@@ -12,7 +12,20 @@ spring:
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USER:pollen}
     password: ${RABBITMQ_PASSWORD:pollen}
+    listener.simple:
+      default-requeue-rejected: false
+      retry:
+        enabled: true
+        max-attempts: ${RABBITMQ_RETRY_MAX_ATTEMPTS:3}
+        initial-interval: ${RABBITMQ_RETRY_INITIAL_INTERVAL:1s}
+        multiplier: ${RABBITMQ_RETRY_MULTIPLIER:2}
+        max-interval: ${RABBITMQ_RETRY_MAX_INTERVAL:10s}
 management.endpoints.web.exposure.include: health,info
+messaging.outbox.fixed-delay: ${OUTBOX_FIXED_DELAY:1s}
+messaging.outbox.batch-size: ${OUTBOX_BATCH_SIZE:50}
+messaging.outbox.lease: ${OUTBOX_LEASE:30s}
+messaging.outbox.workers: ${OUTBOX_WORKERS:4}
+messaging.outbox.queue-capacity: ${OUTBOX_QUEUE_CAPACITY:20}
 storage.s3:
   endpoint: ${S3_ENDPOINT:http://localhost:9000}
   public-endpoint: ${S3_PUBLIC_ENDPOINT:http://localhost:9000}

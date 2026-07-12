@@ -11,29 +11,28 @@ import java.util.*;
 public class CollectionApplicationService
     implements StartCollectionUseCase, QueryCollectionsUseCase, HandleCollectionResultUseCase {
   private final CollectionStore store;
-  private final CollectionRequestPublisher publisher;
+  private final CollectionSubmissionStore submissions;
 
-  public CollectionApplicationService(CollectionStore store, CollectionRequestPublisher publisher) {
+  public CollectionApplicationService(CollectionStore store, CollectionSubmissionStore submissions) {
     this.store = store;
-    this.publisher = publisher;
+    this.submissions = submissions;
   }
 
   @Override
   public PollenCollection start(StartCollectionCommand command) {
     var now = Instant.now();
-    var collection =
-        store.save(PollenCollection.pending(UUID.randomUUID(), command.sourceType(), now));
+    var collection = PollenCollection.pending(UUID.randomUUID(), command.sourceType(), now);
     var parameters =
         new CollectionParameters(command.dateFrom(), command.dateTo(), command.location());
-    publisher.publish(
+    var request =
         new CollectionRequest(
             "1.0",
             collection.id(),
             now,
             CollectionReason.MANUAL,
             command.sourceType(),
-            parameters));
-    return collection;
+            parameters);
+    return submissions.submit(collection, request);
   }
 
   @Override

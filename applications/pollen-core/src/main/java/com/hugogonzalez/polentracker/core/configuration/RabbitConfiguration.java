@@ -22,7 +22,7 @@ public class RabbitConfiguration {
   Queue requestQueue() {
     return QueueBuilder.durable(RabbitTopology.REQUEST_QUEUE)
         .deadLetterExchange(RabbitTopology.DLX)
-        .deadLetterRoutingKey("collection.requests.failed")
+        .deadLetterRoutingKey(RabbitTopology.REQUEST_DEAD_LETTER)
         .build();
   }
 
@@ -30,7 +30,7 @@ public class RabbitConfiguration {
   Queue completedQueue() {
     return QueueBuilder.durable(RabbitTopology.COMPLETED_QUEUE)
         .deadLetterExchange(RabbitTopology.DLX)
-        .deadLetterRoutingKey("collection.results.failed")
+        .deadLetterRoutingKey(RabbitTopology.RESULT_DEAD_LETTER)
         .build();
   }
 
@@ -38,7 +38,7 @@ public class RabbitConfiguration {
   Queue measurementQueue() {
     return QueueBuilder.durable(RabbitTopology.MEASUREMENT_QUEUE)
         .deadLetterExchange(RabbitTopology.DLX)
-        .deadLetterRoutingKey("collection.measurements.failed")
+        .deadLetterRoutingKey(RabbitTopology.MEASUREMENT_DEAD_LETTER)
         .build();
   }
 
@@ -46,13 +46,13 @@ public class RabbitConfiguration {
   Queue failedQueue() {
     return QueueBuilder.durable(RabbitTopology.FAILED_QUEUE)
         .deadLetterExchange(RabbitTopology.DLX)
-        .deadLetterRoutingKey("collection.results.failed")
+        .deadLetterRoutingKey(RabbitTopology.RESULT_DEAD_LETTER)
         .build();
   }
 
   @Bean
   Queue deadLetterQueue() {
-    return QueueBuilder.durable("pollen.dead-letter").build();
+    return QueueBuilder.durable(RabbitTopology.DEAD_LETTER_QUEUE).build();
   }
 
   @Bean
@@ -80,8 +80,17 @@ public class RabbitConfiguration {
   }
 
   @Bean
-  Binding deadLetters() {
-    return BindingBuilder.bind(deadLetterQueue()).to(deadLetterExchange()).with("#");
+  Declarables deadLetterBindings() {
+    return new Declarables(
+        BindingBuilder.bind(deadLetterQueue())
+            .to(deadLetterExchange())
+            .with(RabbitTopology.REQUEST_DEAD_LETTER),
+        BindingBuilder.bind(deadLetterQueue())
+            .to(deadLetterExchange())
+            .with(RabbitTopology.RESULT_DEAD_LETTER),
+        BindingBuilder.bind(deadLetterQueue())
+            .to(deadLetterExchange())
+            .with(RabbitTopology.MEASUREMENT_DEAD_LETTER));
   }
 
   @Bean

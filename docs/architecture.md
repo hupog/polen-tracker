@@ -116,6 +116,20 @@ HTTP POST /api/collections
 
 La trazabilidad de mensajes se realiza mediante `MessageTraceStore`, implementado por PostgreSQL, desde los adaptadores Rabbit. Así, los casos de uso no conocen metadatos AMQP.
 
+La creación de una recolección utiliza un outbox transaccional. `collections` y
+`collection_request_outbox` se escriben en la misma transacción PostgreSQL. Un relay periódico
+reclama lotes con `FOR UPDATE SKIP LOCKED` mediante una transacción corta y cambia las entradas de
+`PENDING` a `PROCESSING`, asignándoles propietario y vencimiento de lease. Después las publica en
+paralelo mediante un pool limitado, fuera de la transacción de reclamación. El resultado cambia la
+entrada a `PUBLISHED` o de nuevo a `PENDING` con backoff. Si una instancia muere, otra puede
+recuperar las entradas `PROCESSING` cuyo lease haya vencido.
+
+Los listeners realizan un máximo de tres intentos con backoff exponencial. Cuando se agotan,
+rechazan el mensaje sin reencolarlo y RabbitMQ lo enruta mediante `pollen.dlx` a
+`pollen.dead-letter`. Un intento fallido no publica por sí mismo `collection.failed`, ya que
+el error puede ser transitorio; el tratamiento y eventual reprocesamiento de la DLQ debe decidir
+el estado final de la recolección.
+
 ## Persistencia de mediciones
 
 Cada evento `collection.measurement-collected` se enruta a la cola durable `collection.measurements.core`. El adaptador de entrada Rabbit delega en `StorePollenMeasurementUseCase`, que persiste mediante `PollenMeasurementStore`.
